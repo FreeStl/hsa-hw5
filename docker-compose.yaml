@@ -1,0 +1,47 @@
+services:
+
+  mongodb:
+    image: mongo
+    container_name: mongo
+    volumes:
+      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    ports:
+      - '27017:27017'
+    environment:
+      - 'MONGO_INITDB_DATABASE=metrics'
+      - 'MONGO_INITDB_ROOT_PASSWORD=admin'
+      - 'MONGO_INITDB_ROOT_USERNAME=admin'
+    networks:
+      - common-net
+
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    restart: unless-stopped
+    ports:
+      - '9090:9090'
+    volumes:
+      - ./prometheus:/etc/prometheus/
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yaml'
+    networks:
+      - common-net
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    depends_on:
+      - prometheus
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel,grafana-clock-panel
+    ports:
+      - '3000:3000'
+    networks:
+      - common-net
+
+networks:
+  common-net:
+    driver: bridge
+    name: common-net
